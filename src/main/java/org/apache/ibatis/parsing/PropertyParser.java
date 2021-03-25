@@ -51,19 +51,43 @@ public class PropertyParser {
   }
 
   public static String parse(String string, Properties variables) {
+    // 创建 VariableTokenHandler 对象
     VariableTokenHandler handler = new VariableTokenHandler(variables);
+    // 创建 GenericTokenParser 对象
     GenericTokenParser parser = new GenericTokenParser("${", "}", handler);
+    // 执行解析
     return parser.parse(string);
   }
 
   private static class VariableTokenHandler implements TokenHandler {
+    /**
+     * 变量 Properties 对象
+     */
     private final Properties variables;
+    /**
+     * 是否开启默认值功能。默认为 {@link #ENABLE_DEFAULT_VALUE}
+     */
     private final boolean enableDefaultValue;
+    /**
+     * 默认值的分隔符。默认为 {@link #KEY_DEFAULT_VALUE_SEPARATOR} ，即 ":"
+     */
     private final String defaultValueSeparator;
 
     private VariableTokenHandler(Properties variables) {
       this.variables = variables;
+      /**
+       * 是否开启默认值功能，默认 false，如需要开启，配置如下
+       * <properties resource="org/mybatis/example/config.properties">
+       *   <property name="org.apache.ibatis.parsing.PropertyParser.enable-default-value" value="true"/>
+       * </properties>
+       */
       this.enableDefaultValue = Boolean.parseBoolean(getPropertyValue(KEY_ENABLE_DEFAULT_VALUE, ENABLE_DEFAULT_VALUE));
+      /**
+       * 默认值的分隔符。默认为 ':',如需要修改，配置如下
+       * <properties resource="org/mybatis/example/config.properties">
+       *   <property name="org.apache.ibatis.parsing.PropertyParser.default-value-separator" value="?:"/>
+       * </properties>
+       */
       this.defaultValueSeparator = getPropertyValue(KEY_DEFAULT_VALUE_SEPARATOR, DEFAULT_VALUE_SEPARATOR);
     }
 
@@ -75,6 +99,9 @@ public class PropertyParser {
     public String handleToken(String content) {
       if (variables != null) {
         String key = content;
+        // 如果开启默认值功能
+        // 通过分隔符获取 key 和 defaultValue 获取对应的值
+        // 否则通过原始 key 获取对应的值
         if (enableDefaultValue) {
           final int separatorIndex = content.indexOf(defaultValueSeparator);
           String defaultValue = null;

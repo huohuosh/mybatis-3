@@ -23,10 +23,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ParamNameUtil {
+  /**
+   * 获得普通方法的参数列表
+   * @param method
+   * @return
+   */
   public static List<String> getParamNames(Method method) {
     return getParameterNames(method);
   }
 
+  /**
+   * 获得构造方法的参数列表
+   * @param constructor
+   * @return
+   */
   public static List<String> getParamNames(Constructor<?> constructor) {
     return getParameterNames(constructor);
   }

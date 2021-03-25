@@ -28,11 +28,19 @@ import org.apache.ibatis.reflection.wrapper.ObjectWrapper;
 import org.apache.ibatis.reflection.wrapper.ObjectWrapperFactory;
 
 /**
+ * 对象元数据，提供了对象的属性值的获得和设置等等方法
+ * 可以理解成，对 BaseWrapper 操作的进一步增强
  * @author Clinton Begin
  */
 public class MetaObject {
 
+  /**
+   * 原始 Object 对象
+   */
   private final Object originalObject;
+  /**
+   * 封装过的 Object 对象
+   */
   private final ObjectWrapper objectWrapper;
   private final ObjectFactory objectFactory;
   private final ObjectWrapperFactory objectWrapperFactory;
@@ -44,6 +52,7 @@ public class MetaObject {
     this.objectWrapperFactory = objectWrapperFactory;
     this.reflectorFactory = reflectorFactory;
 
+    // 设置 objectWrapper
     if (object instanceof ObjectWrapper) {
       this.objectWrapper = (ObjectWrapper) object;
     } else if (objectWrapperFactory.hasWrapperFor(object)) {
@@ -57,6 +66,14 @@ public class MetaObject {
     }
   }
 
+  /**
+   * 创建 MetaObject 对象
+   * @param object
+   * @param objectFactory
+   * @param objectWrapperFactory
+   * @param reflectorFactory
+   * @return
+   */
   public static MetaObject forObject(Object object, ObjectFactory objectFactory, ObjectWrapperFactory objectWrapperFactory, ReflectorFactory reflectorFactory) {
     if (object == null) {
       return SystemMetaObject.NULL_META_OBJECT;
@@ -109,8 +126,16 @@ public class MetaObject {
     return objectWrapper.hasGetter(name);
   }
 
+  /**
+   * 获得指定属性的值
+   * @param name
+   * @return
+   */
   public Object getValue(String name) {
     PropertyTokenizer prop = new PropertyTokenizer(name);
+    // 有子表达式
+    // 创建属性的 MetaObject，如果值为空，返回 null
+    // 递归获取 children 的值
     if (prop.hasNext()) {
       MetaObject metaValue = metaObjectForProperty(prop.getIndexedName());
       if (metaValue == SystemMetaObject.NULL_META_OBJECT) {
@@ -118,6 +143,7 @@ public class MetaObject {
       } else {
         return metaValue.getValue(prop.getChildren());
       }
+    // 无子表达式，直接返回值
     } else {
       return objectWrapper.get(prop);
     }
@@ -132,6 +158,7 @@ public class MetaObject {
           // don't instantiate child path if value is null
           return;
         } else {
+          // 创建值
           metaValue = objectWrapper.instantiatePropertyValue(name, prop, objectFactory);
         }
       }
@@ -142,7 +169,9 @@ public class MetaObject {
   }
 
   public MetaObject metaObjectForProperty(String name) {
+    // 获得属性值
     Object value = getValue(name);
+    // 创建 MetaObject 对象
     return MetaObject.forObject(value, objectFactory, objectWrapperFactory, reflectorFactory);
   }
 

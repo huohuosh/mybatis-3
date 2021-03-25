@@ -31,16 +31,22 @@ import java.util.Arrays;
 public class TypeParameterResolver {
 
   /**
+   * 解析属性类型
+   * @param srcType 被反射时调用的类型，即被解析的方法或字段是通过那个类型反射出来的
    * @return The field type as {@link Type}. If it has type parameters in the declaration,<br>
    *         they will be resolved to the actual runtime {@link Type}s.
+   *
    */
   public static Type resolveFieldType(Field field, Type srcType) {
+    // 属性类型
     Type fieldType = field.getGenericType();
+    // 属性定义的类
     Class<?> declaringClass = field.getDeclaringClass();
     return resolveType(fieldType, srcType, declaringClass);
   }
 
   /**
+   * 解析方法返回类型
    * @return The return type of the method as {@link Type}. If it has type parameters in the declaration,<br>
    *         they will be resolved to the actual runtime {@link Type}s.
    */
@@ -51,6 +57,7 @@ public class TypeParameterResolver {
   }
 
   /**
+   * 解析方法参数的类型数组
    * @return The parameter types of the method as an array of {@link Type}s. If they have type parameters in the declaration,<br>
    *         they will be resolved to the actual runtime {@link Type}s.
    */
@@ -65,10 +72,13 @@ public class TypeParameterResolver {
   }
 
   private static Type resolveType(Type type, Type srcType, Class<?> declaringClass) {
+    // 类型变量
     if (type instanceof TypeVariable) {
       return resolveTypeVar((TypeVariable<?>) type, srcType, declaringClass);
+    // 参数化类型
     } else if (type instanceof ParameterizedType) {
       return resolveParameterizedType((ParameterizedType) type, srcType, declaringClass);
+    // 数组类型
     } else if (type instanceof GenericArrayType) {
       return resolveGenericArrayType((GenericArrayType) type, srcType, declaringClass);
     } else {
@@ -133,18 +143,35 @@ public class TypeParameterResolver {
     return result;
   }
 
+  /**
+   * 解析具体的类型变量指代的类型
+   * 1.如果 srcType 的 Class 类型和 declaringClass 为同一个类，表示获取该类型变量时被反射的类型就是其定义的类型，
+   * 则取该类型变量定义是有没有上限，如果有则使用其上限代表其类型，否则就用 Object。
+   * 2.如果不是，则代表 declaringClass 是 srcType 的父类或者实现的接口，则解析继承中有没有定义其代表的类型
+   *
+   * @param typeVar
+   * @param srcType
+   * @param declaringClass
+   * @return
+   */
   private static Type resolveTypeVar(TypeVariable<?> typeVar, Type srcType, Class<?> declaringClass) {
     Type result = null;
     Class<?> clazz = null;
+    /**
+     * 判断srcType是否为Class/ParameterizedType类型
+     * 如果不是这两种类型这抛出异常
+     */
+    // 调用的类型是 Class
     if (srcType instanceof Class) {
       clazz = (Class<?>) srcType;
+    // 调用的类型是是参数化类型,获取 <> 前面的类型 Class
     } else if (srcType instanceof ParameterizedType) {
       ParameterizedType parameterizedType = (ParameterizedType) srcType;
       clazz = (Class<?>) parameterizedType.getRawType();
     } else {
       throw new IllegalArgumentException("The 2nd arg must be Class or ParameterizedType, but was: " + srcType.getClass());
     }
-
+    // 如果调用类型 class 和 声明 class 一致，返回边界上限 或 Object
     if (clazz == declaringClass) {
       Type[] bounds = typeVar.getBounds();
       if(bounds.length > 0) {
@@ -153,6 +180,7 @@ public class TypeParameterResolver {
       return Object.class;
     }
 
+    // 得到调用类型的父类型
     Type superclass = clazz.getGenericSuperclass();
     result = scanSuperTypes(typeVar, srcType, declaringClass, clazz, superclass);
     if (result != null) {
@@ -169,8 +197,23 @@ public class TypeParameterResolver {
     return Object.class;
   }
 
+  /**
+   * 通过对父类/接口的扫描获取其typeVar指代的实际类型
+   * @param typeVar
+   * @param srcType
+   * @param declaringClass
+   * @param clazz
+   * @param superclass
+   * @return
+   */
   private static Type scanSuperTypes(TypeVariable<?> typeVar, Type srcType, Class<?> declaringClass, Class<?> clazz, Type superclass) {
+    /**
+     * 判断处理的父类 superclass 是否为参数化类型，如果不是则代表 declaringClass 和 superclass 的基本 Class
+     * 类型不是同一个类
+     */
     if (superclass instanceof ParameterizedType) {
+      // 如果为ParameterizedType，则获取它基本类型
+      // TODO https://www.jianshu.com/p/423c9a8e4424?utm_campaign=maleskine&utm_content=note&utm_medium=seo_notes&utm_source=recommendation
       ParameterizedType parentAsType = (ParameterizedType) superclass;
       Class<?> parentAsClass = (Class<?>) parentAsType.getRawType();
       TypeVariable<?>[] parentTypeVars = parentAsClass.getTypeParameters();
