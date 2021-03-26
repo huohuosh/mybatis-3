@@ -18,6 +18,7 @@ package org.apache.ibatis.exceptions;
 import org.apache.ibatis.executor.ErrorContext;
 
 /**
+ * 包装异常成 PersistenceException
  * @author Clinton Begin
  */
 public class ExceptionFactory {
