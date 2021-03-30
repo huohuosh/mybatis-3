@@ -23,6 +23,8 @@ import java.sql.Timestamp;
 import java.util.Date;
 
 /**
+ * Date 类型的 TypeHandler 实现类
+ * java.util.Date 和 java.sql.Timestamp 的互相转换
  * @author Clinton Begin
  */
 public class DateTypeHandler extends BaseTypeHandler<Date> {
@@ -30,6 +32,8 @@ public class DateTypeHandler extends BaseTypeHandler<Date> {
   @Override
   public void setNonNullParameter(PreparedStatement ps, int i, Date parameter, JdbcType jdbcType)
       throws SQLException {
+    // 将 Date 转换成 Timestamp 类型
+    // 然后设置到 ps 中
     ps.setTimestamp(i, new Timestamp(parameter.getTime()));
   }
 

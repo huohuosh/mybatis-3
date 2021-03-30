@@ -43,22 +43,26 @@ public interface Cache {
 
   /**
    * @return The identifier of this cache
+   * 标识
    */
   String getId();
 
   /**
+   * 添加指定键的值
    * @param key Can be any object but usually it is a {@link CacheKey}
    * @param value The result of a select.
    */
   void putObject(Object key, Object value);
 
   /**
+   * 获得指定键的值
    * @param key The key
    * @return The object stored in the cache.
    */
   Object getObject(Object key);
 
   /**
+   * 移除指定键的值
    * As of 3.3.0 this method is only called during a rollback
    * for any previous value that was missing in the cache.
    * This lets any blocking cache to release the lock that
@@ -76,10 +80,12 @@ public interface Cache {
 
   /**
    * Clears this cache instance
+   * 清空缓存
    */
   void clear();
 
   /**
+   * 获得容器中缓存的数量
    * Optional. This method is not called by the core.
    *
    * @return The number of elements stored in the cache (not its capacity).
@@ -87,6 +93,7 @@ public interface Cache {
   int getSize();
 
   /**
+   * 获得读取写锁。该方法可以忽略了已经
    * Optional. As of 3.2.6 this method is no longer called by the core.
    *
    * Any locking needed by the cache must be provided internally by the cache provider.

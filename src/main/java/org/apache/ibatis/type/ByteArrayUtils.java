@@ -16,6 +16,7 @@
 package org.apache.ibatis.type;
 
 /**
+ * Byte 数组的工具类
  * @author Clinton Begin
  */
 class ByteArrayUtils {

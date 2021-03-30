@@ -21,6 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * Integer 类型的 TypeHandler 实现类
  * @author Clinton Begin
  */
 public class IntegerTypeHandler extends BaseTypeHandler<Integer> {
@@ -35,6 +36,7 @@ public class IntegerTypeHandler extends BaseTypeHandler<Integer> {
   public Integer getNullableResult(ResultSet rs, String columnName)
       throws SQLException {
     int result = rs.getInt(columnName);
+    // 先通过 rs 判断是否空，如果是空，则返回 null ，否则返回 result
     return result == 0 && rs.wasNull() ? null : result;
   }
 

@@ -23,6 +23,7 @@ import java.util.Date;
 
 /**
  * @author Clinton Begin
+ * java.util.Date 和 java.sql.Date 的互相转换
  */
 public class DateOnlyTypeHandler extends BaseTypeHandler<Date> {
 

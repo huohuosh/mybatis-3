@@ -20,6 +20,7 @@ import java.lang.reflect.Type;
 
 /**
  * References a generic type.
+ * 引用泛型抽象类。 解析类上定义的泛型
  *
  * @param <T> the referenced type
  * @since 3.1.0
@@ -27,6 +28,9 @@ import java.lang.reflect.Type;
  */
 public abstract class TypeReference<T> {
 
+  /**
+   * T 的实际类型
+   */
   private final Type rawType;
 
   protected TypeReference() {
@@ -34,6 +38,7 @@ public abstract class TypeReference<T> {
   }
 
   Type getSuperclassTypeParameter(Class<?> clazz) {
+    // 父类的 TYPE
     Type genericSuperclass = clazz.getGenericSuperclass();
     if (genericSuperclass instanceof Class) {
       // try to climb up the hierarchy until meet something useful

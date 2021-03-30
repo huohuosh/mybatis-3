@@ -23,6 +23,7 @@ import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.apache.ibatis.transaction.Transaction;
+import org.apache.ibatis.transaction.jdbc.JdbcTransaction;
 
 /**
  * {@link Transaction} that lets the container manage the full lifecycle of the transaction.
@@ -38,9 +39,22 @@ public class ManagedTransaction implements Transaction {
 
   private static final Log log = LogFactory.getLog(ManagedTransaction.class);
 
+  /**
+   * Connection 对象
+   */
   private DataSource dataSource;
+  /**
+   * 事务隔离级别
+   */
   private TransactionIsolationLevel level;
+  /**
+   * Connection 对象
+   */
   private Connection connection;
+  /**
+   * 是否关闭连接
+   * 这个属性是和 {@link JdbcTransaction} 不同的
+   */
   private final boolean closeConnection;
 
   public ManagedTransaction(Connection connection, boolean closeConnection) {
@@ -74,6 +88,7 @@ public class ManagedTransaction implements Transaction {
 
   @Override
   public void close() throws SQLException {
+    // 如果开启关闭连接功能，则关闭连接
     if (this.closeConnection && this.connection != null) {
       if (log.isDebugEnabled()) {
         log.debug("Closing JDBC Connection [" + this.connection + "]");

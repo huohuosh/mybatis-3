@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Jdbc Type 枚举
  * @author Clinton Begin
  */
 public enum JdbcType {
@@ -73,6 +74,7 @@ public enum JdbcType {
   private static Map<Integer,JdbcType> codeLookup = new HashMap<>();
 
   static {
+    // 初始化 codeLookup
     for (JdbcType type : JdbcType.values()) {
       codeLookup.put(type.TYPE_CODE, type);
     }

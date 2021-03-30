@@ -21,11 +21,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
+ * Enum 类型的 TypeHandler 实现类
+ * java.lang.Enum 和 int 的互相转换
  * @author Clinton Begin
  */
 public class EnumOrdinalTypeHandler<E extends Enum<E>> extends BaseTypeHandler<E> {
 
   private final Class<E> type;
+  /**
+   * {@link #type} 下所有的枚举
+   */
   private final E[] enums;
 
   public EnumOrdinalTypeHandler(Class<E> type) {
@@ -41,6 +46,7 @@ public class EnumOrdinalTypeHandler<E extends Enum<E>> extends BaseTypeHandler<E
 
   @Override
   public void setNonNullParameter(PreparedStatement ps, int i, E parameter, JdbcType jdbcType) throws SQLException {
+    // 将 Enum 转换成 int 类型
     ps.setInt(i, parameter.ordinal());
   }
 

@@ -23,6 +23,7 @@ import java.lang.annotation.Target;
 
 /**
  * @author Eduardo Macarron
+ * 匹配的 Java Type 类型的注解
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
