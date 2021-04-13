@@ -54,9 +54,21 @@ import org.apache.ibatis.type.TypeHandler;
  */
 public class MapperBuilderAssistant extends BaseBuilder {
 
+  /**
+   * 当前 Mapper 命名空间
+   */
   private String currentNamespace;
+  /**
+   * 资源引用的地址
+   */
   private final String resource;
+  /**
+   * 当前 Cache 对象
+   */
   private Cache currentCache;
+  /**
+   * 是否未解析成功 Cache 引用
+   */
   private boolean unresolvedCacheRef; // issue #676
 
   public MapperBuilderAssistant(Configuration configuration, String resource) {
@@ -82,16 +94,24 @@ public class MapperBuilderAssistant extends BaseBuilder {
     this.currentNamespace = currentNamespace;
   }
 
+  /**
+   * 拼接命名空间
+   * @param base
+   * @param isReference
+   * @return
+   */
   public String applyCurrentNamespace(String base, boolean isReference) {
     if (base == null) {
       return null;
     }
+    // 可能是引用其他 namespace，如果有'.'，说明已有 namespace 不处理返回
     if (isReference) {
       // is it qualified with any namespace yet?
       if (base.contains(".")) {
         return base;
       }
     } else {
+      // 判断是否已加上了当前 namespace，如果有直接返回
       // is it qualified with this namespace yet?
       if (base.startsWith(currentNamespace + ".")) {
         return base;
@@ -100,19 +120,32 @@ public class MapperBuilderAssistant extends BaseBuilder {
         throw new BuilderException("Dots are not allowed in element names, please remove it from " + base);
       }
     }
+    // 加上了当前 namespace
     return currentNamespace + "." + base;
   }
 
+  /**
+   * 获得指向的 Cache 对象
+   * 当前 namespace 使用 传入的 namespace 的缓存
+   * @see Configuration#caches
+   * @param namespace
+   * @return
+   */
   public Cache useCacheRef(String namespace) {
     if (namespace == null) {
       throw new BuilderException("cache-ref element requires a namespace attribute.");
     }
     try {
+      // 设置 cacheRef 未解析成功
+      // 获取传入的 namespace 的缓存
+      // 如果不存在，抛出异常
       unresolvedCacheRef = true;
       Cache cache = configuration.getCache(namespace);
       if (cache == null) {
         throw new IncompleteElementException("No cache for namespace '" + namespace + "' could be found.");
       }
+      // 设置当前缓存为获取到的缓存
+      // 设置 cacheRef 解析成功
       currentCache = cache;
       unresolvedCacheRef = false;
       return cache;
@@ -121,6 +154,17 @@ public class MapperBuilderAssistant extends BaseBuilder {
     }
   }
 
+  /**
+   * 为当前 namespace 创建缓存
+   * @param typeClass
+   * @param evictionClass
+   * @param flushInterval
+   * @param size
+   * @param readWrite
+   * @param blocking
+   * @param props
+   * @return
+   */
   public Cache useNewCache(Class<? extends Cache> typeClass,
       Class<? extends Cache> evictionClass,
       Long flushInterval,
@@ -137,6 +181,8 @@ public class MapperBuilderAssistant extends BaseBuilder {
         .blocking(blocking)
         .properties(props)
         .build();
+    // 添加缓存到 configuration#caches
+    // 设置当前缓存为创建的缓存
     configuration.addCache(cache);
     currentCache = cache;
     return cache;
@@ -173,6 +219,16 @@ public class MapperBuilderAssistant extends BaseBuilder {
         .build();
   }
 
+  /**
+   * 创建 ResultMap 对象，并添加到 Configuration
+   * @param id
+   * @param type
+   * @param extend
+   * @param discriminator
+   * @param resultMappings
+   * @param autoMapping
+   * @return
+   */
   public ResultMap addResultMap(
       String id,
       Class<?> type,
@@ -180,17 +236,33 @@ public class MapperBuilderAssistant extends BaseBuilder {
       Discriminator discriminator,
       List<ResultMapping> resultMappings,
       Boolean autoMapping) {
+    /**
+     * id 不会引用其他命名空间的 id，在当前 namespace 是唯一的
+     * 而下面 extend 是可以引用其他的 namespace 相关的 id
+     * 所以第二个参数是有区别的
+     */
+    // 获得 ResultMap 编号，即格式为 `${namespace}.${id}`
     id = applyCurrentNamespace(id, false);
+    // 获取完整的 extend 属性，即格式为 `${namespace}.${extend}`
+    // 或 `${otherNamespace}.${extend}`,表示原本已有命名空间
     extend = applyCurrentNamespace(extend, true);
 
+    /**
+     * 如果有父类，则将父类的 ResultMap 集合，添加到 resultMappings 中
+     * 构建 ResultMap，加入 configuration
+     * @see Configuration#resultMaps
+     */
+    // 如果对应的父类 resultMap 不存在，抛出异常
     if (extend != null) {
       if (!configuration.hasResultMap(extend)) {
         throw new IncompleteElementException("Could not find a parent resultmap with id '" + extend + "'");
       }
+      // 获取 extend 的 ResultMap 对象的 ResultMapping 集合，并移除 resultMappings
       ResultMap resultMap = configuration.getResultMap(extend);
       List<ResultMapping> extendedResultMappings = new ArrayList<>(resultMap.getResultMappings());
       extendedResultMappings.removeAll(resultMappings);
       // Remove parent constructor if this resultMap declares a constructor.
+      // 判断当前的 resultMappings 是否有构造方法，如果有移除父类的构造方法类型的 ResultMapping
       boolean declaresConstructor = false;
       for (ResultMapping resultMapping : resultMappings) {
         if (resultMapping.getFlags().contains(ResultFlag.CONSTRUCTOR)) {
@@ -206,11 +278,14 @@ public class MapperBuilderAssistant extends BaseBuilder {
           }
         }
       }
+      // 将 extendedResultMappings 添加到 resultMappings 中
       resultMappings.addAll(extendedResultMappings);
     }
+    // 创建 ResultMap 对象
     ResultMap resultMap = new ResultMap.Builder(configuration, id, type, resultMappings, autoMapping)
         .discriminator(discriminator)
         .build();
+    // 添加到 configuration 中
     configuration.addResultMap(resultMap);
     return resultMap;
   }
@@ -268,13 +343,17 @@ public class MapperBuilderAssistant extends BaseBuilder {
       LanguageDriver lang,
       String resultSets) {
 
+    // Cache 引用未处理完成，抛出异常
     if (unresolvedCacheRef) {
       throw new IncompleteElementException("Cache-ref not yet resolved");
     }
 
+    // 获取 id，格式为 `${namespace}.${id}`
     id = applyCurrentNamespace(id, false);
+    // 是否是 select
     boolean isSelect = sqlCommandType == SqlCommandType.SELECT;
 
+    // 创建 MappedStatement.Builder
     MappedStatement.Builder statementBuilder = new MappedStatement.Builder(configuration, id, sqlSource, sqlCommandType)
         .resource(resource)
         .fetchSize(fetchSize)
@@ -298,7 +377,9 @@ public class MapperBuilderAssistant extends BaseBuilder {
       statementBuilder.parameterMap(statementParameterMap);
     }
 
+    // 创建 MappedStatement 对象
     MappedStatement statement = statementBuilder.build();
+    // 添加到 configuration 中
     configuration.addMappedStatement(statement);
     return statement;
   }
@@ -311,7 +392,9 @@ public class MapperBuilderAssistant extends BaseBuilder {
       String parameterMapName,
       Class<?> parameterTypeClass,
       String statementId) {
+    // // 获得 parameterMap 的编号
     parameterMapName = applyCurrentNamespace(parameterMapName, true);
+    // 如果 parameterMapName 非空，则获得 parameterMapName 对应的 ParameterMap 对象
     ParameterMap parameterMap = null;
     if (parameterMapName != null) {
       try {
@@ -319,6 +402,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
       } catch (IllegalArgumentException e) {
         throw new IncompleteElementException("Could not find parameter map " + parameterMapName, e);
       }
+    // 如果 parameterTypeClass 非空，则创建 ParameterMap 对象
     } else if (parameterTypeClass != null) {
       List<ParameterMapping> parameterMappings = new ArrayList<>();
       parameterMap = new ParameterMap.Builder(
@@ -334,9 +418,11 @@ public class MapperBuilderAssistant extends BaseBuilder {
       String resultMap,
       Class<?> resultType,
       String statementId) {
+    // 获得 resultMap 的编号
     resultMap = applyCurrentNamespace(resultMap, true);
 
     List<ResultMap> resultMaps = new ArrayList<>();
+    // 如果 resultMap 非空，则获得 resultMap 对应的 ResultMap 对象(们）
     if (resultMap != null) {
       String[] resultMapNames = resultMap.split(",");
       for (String resultMapName : resultMapNames) {
@@ -346,6 +432,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
           throw new IncompleteElementException("Could not find result map " + resultMapName, e);
         }
       }
+    // 如果 resultType 非空，则创建 ResultMap 对象
     } else if (resultType != null) {
       ResultMap inlineResultMap = new ResultMap.Builder(
           configuration,
@@ -373,8 +460,11 @@ public class MapperBuilderAssistant extends BaseBuilder {
       String resultSet,
       String foreignColumn,
       boolean lazy) {
+    // 解析对应的 Java Type 类和 TypeHandler 对象
     Class<?> javaTypeClass = resolveResultJavaType(resultType, property, javaType);
     TypeHandler<?> typeHandlerInstance = resolveTypeHandler(javaTypeClass, typeHandler);
+    // 解析组合字段名称成 ResultMapping 集合。涉及「关联的嵌套查询」
+    // <association property="zip" select="selectZip" column="{state=state,city=city}" />
     List<ResultMapping> composites = parseCompositeColumnName(column);
     return new ResultMapping.Builder(configuration, property, column, javaTypeClass)
         .jdbcType(jdbcType)
@@ -410,6 +500,7 @@ public class MapperBuilderAssistant extends BaseBuilder {
   private List<ResultMapping> parseCompositeColumnName(String columnName) {
     List<ResultMapping> composites = new ArrayList<>();
     if (columnName != null && (columnName.indexOf('=') > -1 || columnName.indexOf(',') > -1)) {
+      // 被 "{}=, " 分割，得到 property 和 column，构建 ResultMapping
       StringTokenizer parser = new StringTokenizer(columnName, "{}=, ", false);
       while (parser.hasMoreTokens()) {
         String property = parser.nextToken();

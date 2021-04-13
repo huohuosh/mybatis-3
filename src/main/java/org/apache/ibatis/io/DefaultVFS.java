@@ -223,6 +223,8 @@ public class DefaultVFS extends VFS {
     }
 
     // If the file part of the URL is itself a URL, then that URL probably points to the JAR
+    // 这段代码看起来比较神奇，虽然看起来没有 break 的条件，但是是通过 MalformedURLException 异常进行
+    // 正如上面英文注释，如果 URL 的文件部分本身就是 URL ，那么该 URL 可能指向 JAR
     try {
       for (;;) {
         url = new URL(url.getFile());
@@ -235,6 +237,8 @@ public class DefaultVFS extends VFS {
     }
 
     // Look for the .jar extension and chop off everything after that
+    // 路径包含 .jar,去掉 .jar 后面部分
+    // 不包含返回 null
     StringBuilder jarUrl = new StringBuilder(url.toExternalForm());
     int index = jarUrl.lastIndexOf(".jar");
     if (index >= 0) {
@@ -251,6 +255,7 @@ public class DefaultVFS extends VFS {
     }
 
     // Try to open and test it
+    // 判断是否为 Jar 文件
     try {
       URL testUrl = new URL(jarUrl.toString());
       if (isJar(testUrl)) {

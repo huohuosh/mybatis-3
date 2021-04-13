@@ -32,22 +32,63 @@ import org.apache.ibatis.reflection.ParamNameUtil;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 结果集，例如 <resultMap /> 解析后的对象
  * @author Clinton Begin
  */
 public class ResultMap {
+  /**
+   * Configuration 对象
+   */
   private Configuration configuration;
 
   private String id;
+  /**
+   * 类型
+   */
   private Class<?> type;
+  /**
+   * ResultMapping 集合
+   */
   private List<ResultMapping> resultMappings;
+  /**
+   * ID ResultMapping 集合
+   * 当 idResultMappings 为空时，使用 {@link #resultMappings} 赋值
+   */
   private List<ResultMapping> idResultMappings;
+  /**
+   * 构造方法 ResultMapping 集合
+   * 和 {@link #propertyResultMappings} 只有一个值
+   */
   private List<ResultMapping> constructorResultMappings;
+  /**
+   * 属性 ResultMapping 集合
+   */
   private List<ResultMapping> propertyResultMappings;
+  /**
+   * 数据库的字段集合
+   */
   private Set<String> mappedColumns;
+  /**
+   * Java 对象的属性集合
+   */
   private Set<String> mappedProperties;
+  /**
+   * Discriminator 对象
+   */
   private Discriminator discriminator;
+  /**
+   * 是否有内嵌的 ResultMap
+   */
   private boolean hasNestedResultMaps;
+  /**
+   * 是否有内嵌的查询
+   */
   private boolean hasNestedQueries;
+  /**
+   * 是否开启自动匹配
+   * 如果设置这个属性，MyBatis将会为这个ResultMap开启或者关闭自动映射
+   * 这个属性会覆盖全局的属性 autoMappingBehavior。默认值为：unset
+   */
   private Boolean autoMapping;
 
   private ResultMap() {
@@ -90,8 +131,11 @@ public class ResultMap {
       resultMap.propertyResultMappings = new ArrayList<>();
       final List<String> constructorArgNames = new ArrayList<>();
       for (ResultMapping resultMapping : resultMap.resultMappings) {
+        // 初始化 hasNestedQueries
         resultMap.hasNestedQueries = resultMap.hasNestedQueries || resultMapping.getNestedQueryId() != null;
+        // 初始化 hasNestedResultMaps
         resultMap.hasNestedResultMaps = resultMap.hasNestedResultMaps || (resultMapping.getNestedResultMapId() != null && resultMapping.getResultSet() == null);
+        // 添加到 column 到 mappedColumns
         final String column = resultMapping.getColumn();
         if (column != null) {
           resultMap.mappedColumns.add(column.toUpperCase(Locale.ENGLISH));
@@ -103,6 +147,7 @@ public class ResultMap {
             }
           }
         }
+        // 添加到 property 到 mappedProperties
         final String property = resultMapping.getProperty();
         if(property != null) {
           resultMap.mappedProperties.add(property);

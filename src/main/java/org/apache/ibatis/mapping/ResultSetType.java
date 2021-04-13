@@ -27,8 +27,22 @@ public enum ResultSetType {
    * @since 3.5.0
    */
   DEFAULT(-1),
+  /**
+   * 只能向前滚动
+   * 在从 ResultSet（结果集）中读取记录的时，对于访问过的记录就自动释放了内存
+   */
   FORWARD_ONLY(ResultSet.TYPE_FORWARD_ONLY),
+  /**
+   * 能够实现任意的前后滚动，使用各种移动的ResultSet指针的方法
+   * 对于修改不敏感
+   * 为了保证能游标能向上移动到任意位置，已经访问过的所有都保留在内存中不能释放
+   */
   SCROLL_INSENSITIVE(ResultSet.TYPE_SCROLL_INSENSITIVE),
+  /**
+   * 能够实现任意的前后滚动，使用各种移动的ResultSet指针的方法
+   * 对于修改敏感
+   * 为了保证能游标能向上移动到任意位置，已经访问过的所有都保留在内存中不能释放
+   */
   SCROLL_SENSITIVE(ResultSet.TYPE_SCROLL_SENSITIVE);
 
   private final int value;

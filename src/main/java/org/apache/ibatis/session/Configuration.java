@@ -148,17 +148,39 @@ public class Configuration {
   protected final TypeAliasRegistry typeAliasRegistry = new TypeAliasRegistry();
   protected final LanguageDriverRegistry languageRegistry = new LanguageDriverRegistry();
 
+  /**
+   * statement 映射
+   * KEY：`${namespace}.${id}`
+   */
   protected final Map<String, MappedStatement> mappedStatements = new StrictMap<MappedStatement>("Mapped Statements collection")
       .conflictMessageProducer((savedValue, targetValue) ->
           ". please check " + savedValue.getResource() + " and " + targetValue.getResource());
+  /**
+   * 缓存映射
+   */
   protected final Map<String, Cache> caches = new StrictMap<>("Caches collection");
+  /**
+   * ResultMap 的映射
+   * KEY：`${namespace}.${id}`
+   */
   protected final Map<String, ResultMap> resultMaps = new StrictMap<>("Result Maps collection");
   protected final Map<String, ParameterMap> parameterMaps = new StrictMap<>("Parameter Maps collection");
+  /**
+   * KeyGenerator 的映射
+   * KEY：`${namespace}.${id}!selectKey`
+   */
   protected final Map<String, KeyGenerator> keyGenerators = new StrictMap<>("Key Generators collection");
-
+  /**
+   * 已加载的资源
+   */
   protected final Set<String> loadedResources = new HashSet<>();
+  /**
+   * 存储 <sql> 节点
+   */
   protected final Map<String, XNode> sqlFragments = new StrictMap<>("XML fragments parsed from previous mappers");
-
+  /**
+   * 执行失败的解析，保存在集合后续处理
+   */
   protected final Collection<XMLStatementBuilder> incompleteStatements = new LinkedList<>();
   protected final Collection<CacheRefResolver> incompleteCacheRefs = new LinkedList<>();
   protected final Collection<ResultMapResolver> incompleteResultMaps = new LinkedList<>();
@@ -168,6 +190,9 @@ public class Configuration {
    * A map holds cache-ref relationship. The key is the namespace that
    * references a cache bound to another namespace and the value is the
    * namespace which the actual cache is bound to.
+   */
+  /**
+   * Cache 指向的映射
    */
   protected final Map<String, String> cacheRefMap = new HashMap<>();
 
@@ -628,8 +653,13 @@ public class Configuration {
   }
 
   public void addResultMap(ResultMap rm) {
+    // 添加到 resultMaps 中
     resultMaps.put(rm.getId(), rm);
+    // 当前 resultMap 中的 Discriminator 里， 是否有使用 resultMaps 中的对象
+    // 如有，则标记当前 resultMap#hasNestedResultMaps 为 true
     checkLocallyForDiscriminatedNestedResultMaps(rm);
+    // 所有 resultMaps 中的 Discriminator 里，是否有使用当前 resultMap 的对象
+    // 如有，则标记该对象 resultMaps[key]#hasNestedResultMaps 为 true
     checkGloballyForDiscriminatedNestedResultMaps(rm);
   }
 
@@ -839,11 +869,15 @@ public class Configuration {
 
   // Slow but a one time cost. A better solution is welcome.
   protected void checkGloballyForDiscriminatedNestedResultMaps(ResultMap rm) {
+    // 如果传入的 ResultMap 有内嵌的 ResultMap
     if (rm.hasNestedResultMaps()) {
       for (Map.Entry<String, ResultMap> entry : resultMaps.entrySet()) {
         Object value = entry.getValue();
         if (value instanceof ResultMap) {
           ResultMap entryResultMap = (ResultMap) value;
+          // 如果当前 ResultMap 不存在内嵌 ResultMap 并且有 Discriminator
+          // Discriminator 中对应的 ResultMap 是传入的 ResultMap
+          // 则标记传入的 ResultMap 存在内嵌 ResultMap
           if (!entryResultMap.hasNestedResultMaps() && entryResultMap.getDiscriminator() != null) {
             Collection<String> discriminatedResultMapNames = entryResultMap.getDiscriminator().getDiscriminatorMap().values();
             if (discriminatedResultMapNames.contains(rm.getId())) {
@@ -857,9 +891,11 @@ public class Configuration {
 
   // Slow but a one time cost. A better solution is welcome.
   protected void checkLocallyForDiscriminatedNestedResultMaps(ResultMap rm) {
+    // 如果传入的 ResultMap 不存在内嵌 ResultMap 并且有 Discriminator
     if (!rm.hasNestedResultMaps() && rm.getDiscriminator() != null) {
       for (Map.Entry<String, String> entry : rm.getDiscriminator().getDiscriminatorMap().entrySet()) {
         String discriminatedResultMapName = entry.getValue();
+        // 如果 Discriminator 中对应的 ResultMap 存在，则标记传入的 ResultMap 存在内嵌 ResultMap
         if (hasResultMap(discriminatedResultMapName)) {
           ResultMap discriminatedResultMap = resultMaps.get(discriminatedResultMapName);
           if (discriminatedResultMap.hasNestedResultMaps()) {
@@ -910,12 +946,25 @@ public class Configuration {
       return this;
     }
 
+    /**
+     * 该 put 方法可能会 put 进 2个值
+     * 比如
+     * KEY: ${namespace}.${id},VALUE: value
+     * KEY: ${id},VALUE: value
+     * @param key
+     * @param value
+     * @return
+     */
     @SuppressWarnings("unchecked")
     public V put(String key, V value) {
+      // 已存在该 key，抛出异常
       if (containsKey(key)) {
         throw new IllegalArgumentException(name + " already contains value for " + key
             + (conflictMessageProducer == null ? "" : conflictMessageProducer.apply(super.get(key), value)));
       }
+      // 如果 key 包含 '.'，得到 shortKey，比如 ${namespace}.${id}` 得到 ${id}
+      // 如果 shortKey 不存在，加入 map
+      // 如果 shortKey 存在，value 替换为 new Ambiguity(shortKey)
       if (key.contains(".")) {
         final String shortKey = getShortName(key);
         if (super.get(shortKey) == null) {
@@ -924,10 +973,12 @@ public class Configuration {
           super.put(shortKey, (V) new Ambiguity(shortKey));
         }
       }
+      // 将原始 key, value 放入 map
       return super.put(key, value);
     }
 
     public V get(Object key) {
+      // 获取对应的 value，如果 value 为 null 或者是 Ambiguity，抛出异常
       V value = super.get(key);
       if (value == null) {
         throw new IllegalArgumentException(name + " does not contain value for " + key);

@@ -20,30 +20,84 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandler;
 import org.apache.ibatis.type.TypeHandlerRegistry;
 
 /**
+ * {@link ResultMap} 中的每一条结果字段的映射
  * @author Clinton Begin
  */
 public class ResultMapping {
 
+  /**
+   * Configuration 对象
+   */
   private Configuration configuration;
+  /**
+   * Java 对象的属性名
+   */
   private String property;
+  /**
+   * 数据库的字段名
+   */
   private String column;
+  /**
+   * Java 对象的属性的类型
+   */
   private Class<?> javaType;
+  /**
+   *  数据库的字段的类型
+   */
   private JdbcType jdbcType;
+  /**
+   * TypeHandler 对象
+   */
   private TypeHandler<?> typeHandler;
+  /**
+   * 内嵌的 ResultMap 编号
+   */
   private String nestedResultMapId;
+  /**
+   * 内嵌的查询语句编号
+   */
   private String nestedQueryId;
+  /**
+   * 默认情况下，在至少一个被映射到属性的列不为空时，子对象才会被创建
+   * 指定后，Mybatis 将只在这些列非空时才创建一个子对象
+   * {@link MapperBuilderAssistant#parseMultipleColumnNames(String)}
+   */
   private Set<String> notNullColumns;
+  /**
+   * 当连接多表时，你将不得不使用列别名来避免ResultSet中的重复列名。
+   * 指定columnPrefix允许你映射列名到一个外部的结果集中
+   */
   private String columnPrefix;
+  /**
+   * ResultFlag 集合
+   */
   private List<ResultFlag> flags;
+  /**
+   * 组合字段解析后的 ResultMapping 集合
+   * 涉及关联查询，在使用复合主键的时候，你可以使用 column="{prop1=col1,prop2=col2}"
+   * <association property="zip" select="selectZip" column="{state=state,city=city}" />
+   * {@link MapperBuilderAssistant#parseCompositeColumnName(String)}
+   */
   private List<ResultMapping> composites;
+  /**
+   * 标识这个将会从哪里加载的复杂类型数据的结果集合的名称
+   */
   private String resultSet;
+  /**
+   *  标识出包含 foreign keys 的列的名称
+   *  这个 foreign keys的值将会和父类型中指定的列属性的值相匹配
+   */
   private String foreignColumn;
+  /**
+   * 是否懒加载
+   */
   private boolean lazy;
 
   ResultMapping() {
@@ -141,8 +195,12 @@ public class ResultMapping {
       return resultMapping;
     }
 
+    /**
+     * 校验
+     */
     private void validate() {
       // Issue #697: cannot define both nestedQueryId and nestedResultMapId
+      // nestedQueryId 和 nestedResultMapId 不能同时存在
       if (resultMapping.nestedQueryId != null && resultMapping.nestedResultMapId != null) {
         throw new IllegalStateException("Cannot define both nestedQueryId and nestedResultMapId in property " + resultMapping.property);
       }

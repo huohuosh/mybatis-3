@@ -53,6 +53,7 @@ import org.apache.ibatis.logging.LogFactory;
  * resolver.find(new CustomTest(), pkg2);
  * Collection&lt;ActionBean&gt; beans = resolver.getClasses();
  * </pre>
+ * 解析器工具类，用于获得指定目录符合条件的类们
  *
  * @author Tim Fennell
  */
@@ -65,6 +66,7 @@ public class ResolverUtil<T> {
   /**
    * A simple interface that specifies how to test classes to determine if they
    * are to be included in the results produced by the ResolverUtil.
+   * 匹配判断接口
    */
   public interface Test {
     /**
@@ -101,6 +103,7 @@ public class ResolverUtil<T> {
   /**
    * A Test that checks to see if each class is annotated with a specific annotation. If it
    * is, then the test returns true, otherwise false.
+   * 判断是否有指定注解
    */
   public static class AnnotatedWith implements Test {
     private Class<? extends Annotation> annotation;
@@ -214,11 +217,14 @@ public class ResolverUtil<T> {
    *        classes, e.g. {@code net.sourceforge.stripes}
    */
   public ResolverUtil<T> find(Test test, String packageName) {
+    // 获得包路径
     String path = getPackagePath(packageName);
 
     try {
+      // 获得路径下的所有文件
       List<String> children = VFS.getInstance().list(path);
       for (String child : children) {
+        // 是 Java Class
         if (child.endsWith(".class")) {
           addIfMatching(test, child);
         }
@@ -250,6 +256,7 @@ public class ResolverUtil<T> {
   @SuppressWarnings("unchecked")
   protected void addIfMatching(Test test, String fqn) {
     try {
+      //  获得全类名
       String externalName = fqn.substring(0, fqn.indexOf('.')).replace('/', '.');
       ClassLoader loader = getClassLoader();
       if (log.isDebugEnabled()) {
@@ -257,6 +264,7 @@ public class ResolverUtil<T> {
       }
 
       Class<?> type = loader.loadClass(externalName);
+     // 判断是否匹配，加入 matches 集合
       if (test.matches(type)) {
         matches.add((Class<T>) type);
       }

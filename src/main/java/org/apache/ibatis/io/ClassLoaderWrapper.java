@@ -19,13 +19,23 @@ import java.io.InputStream;
 import java.net.URL;
 
 /**
+ * ClassLoader 包装器
  * A class to wrap access to multiple class loaders making them work as one
  *
  * @author Clinton Begin
  */
 public class ClassLoaderWrapper {
 
+  /**
+   * 默认 ClassLoader 对象
+   * 目前不存在初始化该属性的构造方法
+   * 可通过 ClassLoaderWrapper.defaultClassLoader = xxx 的方式，进行设置
+   * @see Resources#setDefaultClassLoader(ClassLoader) 
+   */
   ClassLoader defaultClassLoader;
+  /**
+   * 系统 ClassLoader 对象
+   */
   ClassLoader systemClassLoader;
 
   ClassLoaderWrapper() {
@@ -109,13 +119,16 @@ public class ClassLoaderWrapper {
    * @return the resource or null
    */
   InputStream getResourceAsStream(String resource, ClassLoader[] classLoader) {
+    // 遍历 ClassLoader 数组
     for (ClassLoader cl : classLoader) {
       if (null != cl) {
 
         // try to find the resource as passed
+        // 获得 InputStream ，不带 /
         InputStream returnValue = cl.getResourceAsStream(resource);
 
         // now, some class loaders want this leading "/", so we'll add it and try again if we didn't find the resource
+        // 获得 InputStream ，带 /
         if (null == returnValue) {
           returnValue = cl.getResourceAsStream("/" + resource);
         }
@@ -139,15 +152,18 @@ public class ClassLoaderWrapper {
 
     URL url;
 
+    // 遍历 ClassLoader 数组
     for (ClassLoader cl : classLoader) {
 
       if (null != cl) {
 
         // look for the resource as passed in...
+        // 获得 URL ，不带 /
         url = cl.getResource(resource);
 
         // ...but some class loaders want this leading "/", so we'll add it
         // and try again if we didn't find the resource
+        // 获得 URL ，带 /
         if (null == url) {
           url = cl.getResource("/" + resource);
         }
@@ -177,12 +193,13 @@ public class ClassLoaderWrapper {
    */
   Class<?> classForName(String name, ClassLoader[] classLoader) throws ClassNotFoundException {
 
+    // 遍历 ClassLoader 数组
     for (ClassLoader cl : classLoader) {
 
       if (null != cl) {
 
         try {
-
+          // 获得类
           Class<?> c = Class.forName(name, true, cl);
 
           if (null != c) {
@@ -201,6 +218,11 @@ public class ClassLoaderWrapper {
 
   }
 
+  /**
+   * 获得 ClassLoader 数组
+   * @param classLoader
+   * @return
+   */
   ClassLoader[] getClassLoaders(ClassLoader classLoader) {
     return new ClassLoader[]{
         classLoader,

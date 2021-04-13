@@ -29,32 +29,117 @@ import org.apache.ibatis.scripting.LanguageDriver;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 映射的语句
+ * 每个 <select />、<insert />、<update />、<delete /> 对应一个 MappedStatement 对象
+ * <selectKey /> 解析后，也会对应一个 MappedStatement 对象
  * @author Clinton Begin
  */
 public final class MappedStatement {
 
+  /**
+   * 资源引用的地址
+   */
   private String resource;
+  /**
+   * Configuration 对象
+   */
   private Configuration configuration;
+  /**
+   * 编号
+   */
   private String id;
+  /**
+   * 这是尝试影响驱动程序每次批量返回的结果行数和这个设置值相等
+   * 默认值为 unset（依赖驱动）
+   */
   private Integer fetchSize;
+  /**
+   * 这个设置是在抛出异常之前，驱动程序等待数据库返回请求结果的秒数
+   * 默认值为 unset（依赖驱动）
+   */
   private Integer timeout;
+  /**
+   * 语句类型
+   */
   private StatementType statementType;
+  /**
+   * 结果集类型
+   */
   private ResultSetType resultSetType;
+  /**
+   * SqlSource 对象
+   */
   private SqlSource sqlSource;
+  /**
+   * Cache 对象
+   */
   private Cache cache;
+  /**
+   * ParameterMap 对象
+   */
   private ParameterMap parameterMap;
+  /**
+   * ResultMap 集合
+   */
   private List<ResultMap> resultMaps;
+  /**
+   * 将其设置为 true，任何时候只要语句被调用，都会导致本地缓存和二级缓存都会被清空
+   * 默认值：false
+   */
   private boolean flushCacheRequired;
+  /**
+   * 是否使用缓存
+   */
   private boolean useCache;
+  /**
+   * 是一个标志性的属性
+   * resultOrdered属性只存在于select元素中.
+   * 用户可以通过配置该属性的值为true来告知 mybatis 当前 select 语句的查询结果针对于<id>元素的配置是有序的
+   * 即,多个相同<id>属性是分组且连续的.
+   */
   private boolean resultOrdered;
+  /**
+   * SQL 语句类型
+   */
   private SqlCommandType sqlCommandType;
+  /**
+   * KeyGenerator 对象
+   */
   private KeyGenerator keyGenerator;
+  /**
+   * （仅对 insert 和 update 有用）唯一标记一个属性
+   * MyBatis 会通过 getGeneratedKeys 的返回值或者通过 insert 语句的 selectKey 子元素设置它的键值
+   * 默认：unset
+   * 如果希望得到多个生成的列，也可以是逗号分隔的属性名称列表
+   */
   private String[] keyProperties;
+  /**
+   * （仅对 insert 和 update 有用）通过生成的键值设置表中的列名
+   * 这个设置仅在某些数据库（像 PostgreSQL）是必须的
+   * 当主键列不是表中的第一列的时候需要设置
+   * 如果希望得到多个生成的列，也可以是逗号分隔的属性名称列表
+   */
   private String[] keyColumns;
+  /**
+   * 是否有内嵌的 ResultMap
+   */
   private boolean hasNestedResultMaps;
+  /**
+   *  数据库标识
+   */
   private String databaseId;
+  /**
+   * Log 对象
+   */
   private Log statementLog;
+  /**
+   * LanguageDriver 对象
+   */
   private LanguageDriver lang;
+  /**
+   * 这个设置仅对多结果集的情况适用
+   * 它将列出语句执行后返回的结果集并每个结果集给一个名称，名称是逗号分隔的
+   */
   private String[] resultSets;
 
   MappedStatement() {
@@ -74,6 +159,7 @@ public final class MappedStatement {
       mappedStatement.resultMaps = new ArrayList<>();
       mappedStatement.sqlCommandType = sqlCommandType;
       mappedStatement.keyGenerator = configuration.isUseGeneratedKeys() && SqlCommandType.INSERT.equals(sqlCommandType) ? Jdbc3KeyGenerator.INSTANCE : NoKeyGenerator.INSTANCE;
+      // 设置 Log 对象
       String logId = id;
       if (configuration.getLogPrefix() != null) {
         logId = configuration.getLogPrefix() + id;

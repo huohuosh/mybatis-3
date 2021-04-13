@@ -35,16 +35,45 @@ import org.apache.ibatis.reflection.MetaObject;
 import org.apache.ibatis.reflection.SystemMetaObject;
 
 /**
+ * {@link Cache} 构造器
  * @author Clinton Begin
  */
 public class CacheBuilder {
+  /**
+   * 编号
+   * 传入 currentNamespace
+   */
   private final String id;
+  /**
+   * 负责存储的 Cache 实现类
+   */
   private Class<? extends Cache> implementation;
+  /**
+   * Cache 装饰类集合
+   */
   private final List<Class<? extends Cache>> decorators;
+  /**
+   * 缓存容器大小
+   */
   private Integer size;
+  /**
+   * 清空缓存的频率
+   * 0 代表不清空
+   */
   private Long clearInterval;
+  /**
+   * 是否序列化
+   * @see SerializedCache
+   */
   private boolean readWrite;
+  /**
+   * Properties 对象
+   */
   private Properties properties;
+  /**
+   * 是否阻塞
+   * @see BlockingCache
+   */
   private boolean blocking;
 
   public CacheBuilder(String id) {
@@ -90,16 +119,26 @@ public class CacheBuilder {
   }
 
   public Cache build() {
+    // 设置默认实现类
+    // implementation -> PerpetualCache
+    // decorators -> LruCache
     setDefaultImplementations();
+    // 实例化 cache
     Cache cache = newBaseCacheInstance(implementation, id);
+    // 设置属性
     setCacheProperties(cache);
     // issue #352, do not apply decorators to custom caches
+    // 如果 cache 是 PerpetualCache 类，则进行包装
     if (PerpetualCache.class.equals(cache.getClass())) {
       for (Class<? extends Cache> decorator : decorators) {
+        // 包装 Cache 对象
         cache = newCacheDecoratorInstance(decorator, cache);
+        // 设置属性
         setCacheProperties(cache);
       }
+      // 执行标准化的 Cache 包装
       cache = setStandardDecorators(cache);
+    // 如果是自定义的 Cache 类，则包装成 LoggingCache 对象，因为要统计
     } else if (!LoggingCache.class.isAssignableFrom(cache.getClass())) {
       cache = new LoggingCache(cache);
     }
@@ -118,18 +157,24 @@ public class CacheBuilder {
   private Cache setStandardDecorators(Cache cache) {
     try {
       MetaObject metaCache = SystemMetaObject.forObject(cache);
+      // 设置 size
       if (size != null && metaCache.hasSetter("size")) {
         metaCache.setValue("size", size);
       }
+      // 包装成 ScheduledCache 对象
       if (clearInterval != null) {
         cache = new ScheduledCache(cache);
         ((ScheduledCache) cache).setClearInterval(clearInterval);
       }
+      // 包装成 SerializedCache 对象
       if (readWrite) {
         cache = new SerializedCache(cache);
       }
+      // 包装成 LoggingCache 对象
       cache = new LoggingCache(cache);
+      // 包装成 SynchronizedCache 对象
       cache = new SynchronizedCache(cache);
+      // 包装成 BlockingCache 对象
       if (blocking) {
         cache = new BlockingCache(cache);
       }
@@ -176,6 +221,7 @@ public class CacheBuilder {
         }
       }
     }
+    // 如果实现了 InitializingObject 接口，执行进一步初始化逻辑
     if (InitializingObject.class.isAssignableFrom(cache.getClass())){
       try {
         ((InitializingObject) cache).initialize();
