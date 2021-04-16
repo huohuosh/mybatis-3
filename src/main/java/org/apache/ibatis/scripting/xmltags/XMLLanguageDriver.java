@@ -29,6 +29,7 @@ import org.apache.ibatis.scripting.defaults.RawSqlSource;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 实现 LanguageDriver 接口，XML 语言驱动实现类
  * @author Eduardo Macarron
  */
 public class XMLLanguageDriver implements LanguageDriver {
@@ -47,13 +48,18 @@ public class XMLLanguageDriver implements LanguageDriver {
   @Override
   public SqlSource createSqlSource(Configuration configuration, String script, Class<?> parameterType) {
     // issue #3
+    // 如果是 <script> 开头，使用 XML 配置的方式，使用动态 SQL
     if (script.startsWith("<script>")) {
       XPathParser parser = new XPathParser(script, false, configuration.getVariables(), new XMLMapperEntityResolver());
       return createSqlSource(configuration, parser.evalNode("/script"), parameterType);
     } else {
       // issue #127
+      // 变量替换
       script = PropertyParser.parse(script, configuration.getVariables());
+      // 创建 TextSqlNode 对象
       TextSqlNode textSqlNode = new TextSqlNode(script);
+      // 如果是动态 SQL ，则创建 DynamicSqlSource 对象
+      // 如果非动态 SQL ，则创建 RawSqlSource 对象
       if (textSqlNode.isDynamic()) {
         return new DynamicSqlSource(configuration, textSqlNode);
       } else {

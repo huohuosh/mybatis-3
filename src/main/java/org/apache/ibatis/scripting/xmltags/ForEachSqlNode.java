@@ -21,6 +21,7 @@ import org.apache.ibatis.parsing.GenericTokenParser;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * <foreach /> 标签的 SqlNode 实现类
  * @author Clinton Begin
  */
 public class ForEachSqlNode implements SqlNode {
@@ -51,22 +52,37 @@ public class ForEachSqlNode implements SqlNode {
   @Override
   public boolean apply(DynamicContext context) {
     Map<String, Object> bindings = context.getBindings();
+    // 获得遍历的集合的 Iterable 对象，用于遍历
     final Iterable<?> iterable = evaluator.evaluateIterable(collectionExpression, bindings);
+    // 集合为空，不用再处理
     if (!iterable.iterator().hasNext()) {
       return true;
     }
     boolean first = true;
+    // 添加 open 到 SQL 中
     applyOpen(context);
     int i = 0;
+    // 遍历集合
     for (Object o : iterable) {
+      // 记录原始的 context 对象
       DynamicContext oldContext = context;
+      // 生成新的 context
       if (first || separator == null) {
         context = new PrefixedContext(context, "");
       } else {
         context = new PrefixedContext(context, separator);
       }
+      // 获得唯一编号
       int uniqueNumber = context.getUniqueNumber();
       // Issue #709
+      /**
+       * 根据类型将 index、item 放入 bindings
+       * 每个类型会放入两个 key 对应元素
+       * 一个 key 为 index 或 item，保存当前元素数据，处理后会被清除
+       * 一个 key 为 {@link #itemizeItem} 保存对应下标的元素
+       * 当使用可迭代对象或者数组时，index 是当前迭代的次数，item 的值是本次迭代获取的元素
+       * 当使用 Map 对象（或者 Map.Entry 对象的集合）时，index 是键，item 是值
+       */
       if (o instanceof Map.Entry) {
         @SuppressWarnings("unchecked")
         Map.Entry<Object, Object> mapEntry = (Map.Entry<Object, Object>) o;
@@ -76,14 +92,19 @@ public class ForEachSqlNode implements SqlNode {
         applyIndex(context, i, uniqueNumber);
         applyItem(context, o, uniqueNumber);
       }
+      // 执行 contents 的应用
       contents.apply(new FilteredDynamicContext(configuration, context, index, item, uniqueNumber));
+      // 判断 prefix 是否已经插入
       if (first) {
         first = !((PrefixedContext) context).isPrefixApplied();
       }
+      // 恢复原始的 context 对象
       context = oldContext;
       i++;
     }
+    // 添加 close 到 SQL 中
     applyClose(context);
+    // 移除 index 和 item 对应的绑定
     context.getBindings().remove(item);
     context.getBindings().remove(index);
     return true;
@@ -121,8 +142,17 @@ public class ForEachSqlNode implements SqlNode {
 
   private static class FilteredDynamicContext extends DynamicContext {
     private final DynamicContext delegate;
+    /**
+     * 唯一标识 {@link DynamicContext#getUniqueNumber()}
+     */
     private final int index;
+    /**
+     * 索引变量 {@link ForEachSqlNode#index}
+     */
     private final String itemIndex;
+    /**
+     * 集合项 {@link ForEachSqlNode#item}
+     */
     private final String item;
 
     public FilteredDynamicContext(Configuration configuration,DynamicContext delegate, String itemIndex, String item, int i) {
@@ -151,13 +181,18 @@ public class ForEachSqlNode implements SqlNode {
     @Override
     public void appendSql(String sql) {
       GenericTokenParser parser = new GenericTokenParser("#{", "}", content -> {
+        // 将对 item 的访问，替换成 itemizeItem(item, index)
         String newContent = content.replaceFirst("^\\s*" + item + "(?![^.,:\\s])", itemizeItem(item, index));
+        // 将对 itemIndex 的访问，替换成 itemizeItem(itemIndex, index)
         if (itemIndex != null && newContent.equals(content)) {
           newContent = content.replaceFirst("^\\s*" + itemIndex + "(?![^.,:\\s])", itemizeItem(itemIndex, index));
         }
+        // 返回
         return "#{" + newContent + "}";
       });
 
+      // 执行 GenericTokenParser 的解析
+      // 添加到 delegate 中
       delegate.appendSql(parser.parse(sql));
     }
 
@@ -171,6 +206,9 @@ public class ForEachSqlNode implements SqlNode {
 
   private class PrefixedContext extends DynamicContext {
     private final DynamicContext delegate;
+    /**
+     * 前缀
+     */
     private final String prefix;
     private boolean prefixApplied;
 

@@ -23,6 +23,7 @@ import org.apache.ibatis.scripting.ScriptingException;
 import org.apache.ibatis.type.SimpleTypeRegistry;
 
 /**
+ * 文本的 SqlNode 实现类
  * @author Clinton Begin
  */
 public class TextSqlNode implements SqlNode {
@@ -39,6 +40,7 @@ public class TextSqlNode implements SqlNode {
   }
 
   public boolean isDynamic() {
+    // 创建 GenericTokenParser 解析 text，如果被解析说明是动态 sql,包含 ${}
     DynamicCheckerTokenParser checker = new DynamicCheckerTokenParser();
     GenericTokenParser parser = createParser(checker);
     parser.parse(text);
@@ -47,6 +49,7 @@ public class TextSqlNode implements SqlNode {
 
   @Override
   public boolean apply(DynamicContext context) {
+    // 解析 text 加入 sql
     GenericTokenParser parser = createParser(new BindingTokenParser(context, injectionFilter));
     context.appendSql(parser.parse(text));
     return true;
@@ -74,6 +77,7 @@ public class TextSqlNode implements SqlNode {
       } else if (SimpleTypeRegistry.isSimpleType(parameter.getClass())) {
         context.getBindings().put("value", parameter);
       }
+      // 使用 OGNL 表达式，获得对应的值
       Object value = OgnlCache.getValue(content, context.getBindings());
       String srtValue = value == null ? "" : String.valueOf(value); // issue #274 return "" instead of "null"
       checkInjection(srtValue);

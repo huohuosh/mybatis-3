@@ -18,9 +18,13 @@ package org.apache.ibatis.scripting.xmltags;
 import java.util.List;
 
 /**
+ * 混合的 SqlNode 实现类
  * @author Clinton Begin
  */
 public class MixedSqlNode implements SqlNode {
+  /**
+   * 内嵌的 SqlNode 数组
+   */
   private final List<SqlNode> contents;
 
   public MixedSqlNode(List<SqlNode> contents) {
