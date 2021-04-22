@@ -20,6 +20,7 @@ import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.ibatis.annotations.SelectProvider;
 import org.apache.ibatis.builder.BuilderException;
 import org.apache.ibatis.builder.SqlSourceBuilder;
 import org.apache.ibatis.mapping.BoundSql;
@@ -29,6 +30,8 @@ import org.apache.ibatis.reflection.ParamNameResolver;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 基于方法上的 SQL Provider 注解的 SqlSource 实现类
+ * @see MapperAnnotationBuilder#SQL_PROVIDER_ANNOTATION_TYPES
  * @author Clinton Begin
  * @author Kazuki Shimizu
  */
@@ -36,11 +39,31 @@ public class ProviderSqlSource implements SqlSource {
 
   private final Configuration configuration;
   private final SqlSourceBuilder sqlSourceParser;
+  /**
+   * SQL Provider 注解对应的 type
+   * 例如 {@link SelectProvider#type()}
+   */
   private final Class<?> providerType;
+  /**
+   * SQL Provider 注解对应的 method
+   * 例如 {@link SelectProvider#method()} 对应的 Method
+   */
   private Method providerMethod;
+  /**
+   * {@link #providerMethod} 对应的参数名列表
+   */
   private String[] providerMethodArgumentNames;
+  /**
+   * {@link #providerMethod} 对应的参数类型列表
+   */
   private Class<?>[] providerMethodParameterTypes;
+  /**
+   * 如果参数有 ProviderContext 类型，创建该对象
+   */
   private ProviderContext providerContext;
+  /**
+   * 参数 ProviderContext 类型在 {@link #providerMethodParameterTypes} 对应的下标
+   */
   private Integer providerContextIndex;
 
   /**
@@ -58,8 +81,11 @@ public class ProviderSqlSource implements SqlSource {
     String providerMethodName;
     try {
       this.configuration = configuration;
+      // 创建 SqlSourceBuilder 对象
       this.sqlSourceParser = new SqlSourceBuilder(configuration);
+      //  SQL Provider 注解对应的 type
       this.providerType = (Class<?>) provider.getClass().getMethod("type").invoke(provider);
+      // //  SQL Provider 注解对应的 method
       providerMethodName = (String) provider.getClass().getMethod("method").invoke(provider);
 
       for (Method m : this.providerType.getMethods()) {
@@ -70,6 +96,7 @@ public class ProviderSqlSource implements SqlSource {
                     + "'. Sql provider method can not overload.");
           }
           this.providerMethod = m;
+          // 解析参数名和参数类型
           this.providerMethodArgumentNames = new ParamNameResolver(configuration, m).getNames();
           this.providerMethodParameterTypes = m.getParameterTypes();
         }
@@ -83,6 +110,7 @@ public class ProviderSqlSource implements SqlSource {
       throw new BuilderException("Error creating SqlSource for SqlProvider. Method '"
           + providerMethodName + "' not found in SqlProvider '" + this.providerType.getName() + "'.");
     }
+    // 初始化 providerContext 和 providerContextIndex 属性
     for (int i = 0; i< this.providerMethodParameterTypes.length; i++) {
       Class<?> parameterType = this.providerMethodParameterTypes[i];
       if (parameterType == ProviderContext.class) {
@@ -99,6 +127,7 @@ public class ProviderSqlSource implements SqlSource {
 
   @Override
   public BoundSql getBoundSql(Object parameterObject) {
+    // 创建 SqlSource 对象
     SqlSource sqlSource = createSqlSource(parameterObject);
     return sqlSource.getBoundSql(parameterObject);
   }
@@ -107,6 +136,7 @@ public class ProviderSqlSource implements SqlSource {
     try {
       int bindParameterCount = providerMethodParameterTypes.length - (providerContext == null ? 0 : 1);
       String sql;
+      // 根据条件获得 SQL
       if (providerMethodParameterTypes.length == 0) {
         sql = invokeProviderMethod();
       } else if (bindParameterCount == 0) {
@@ -125,6 +155,7 @@ public class ProviderSqlSource implements SqlSource {
                 + (bindParameterCount == 1 ? "named argument(@Param)": "multiple arguments")
                 + " using a specifying parameterObject. In this case, please specify a 'java.util.Map' object.");
       }
+      // 获取参数类型，解析出 SqlSource 对象
       Class<?> parameterType = parameterObject == null ? Object.class : parameterObject.getClass();
       return sqlSourceParser.parse(replacePlaceholder(sql), parameterType, new HashMap<>());
     } catch (BuilderException e) {

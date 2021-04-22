@@ -25,10 +25,13 @@ import org.apache.ibatis.parsing.GenericTokenParser;
 import org.apache.ibatis.parsing.TokenHandler;
 import org.apache.ibatis.reflection.MetaClass;
 import org.apache.ibatis.reflection.MetaObject;
+import org.apache.ibatis.scripting.xmltags.DynamicContext;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.type.JdbcType;
 
 /**
+ * SqlSource 构建器，负责将 SQL 语句中的 #{} 替换成相应的 ? 占位符
+ * 并获取该 ? 占位符对应的 {@link ParameterMapping} 对象
  * @author Clinton Begin
  */
 public class SqlSourceBuilder extends BaseBuilder {
@@ -39,17 +42,35 @@ public class SqlSourceBuilder extends BaseBuilder {
     super(configuration);
   }
 
+  /**
+   * 执行解析原始 SQL ，成为 SqlSource 对象
+   * @param originalSql 原始 SQL
+   * @param parameterType 参数类型
+   * @param additionalParameters 附加参数集合。可能是空集合，也可能是 {@link DynamicContext#bindings} 集合
+   * @return
+   */
   public SqlSource parse(String originalSql, Class<?> parameterType, Map<String, Object> additionalParameters) {
     ParameterMappingTokenHandler handler = new ParameterMappingTokenHandler(configuration, parameterType, additionalParameters);
     GenericTokenParser parser = new GenericTokenParser("#{", "}", handler);
+    // 解析 sql
     String sql = parser.parse(originalSql);
+    // 创建 StaticSqlSource 对象
     return new StaticSqlSource(configuration, sql, handler.getParameterMappings());
   }
 
   private static class ParameterMappingTokenHandler extends BaseBuilder implements TokenHandler {
 
+    /**
+     * ParameterMapping 数组
+     */
     private List<ParameterMapping> parameterMappings = new ArrayList<>();
+    /**
+     * 参数类型
+     */
     private Class<?> parameterType;
+    /**
+     * additionalParameters 参数的对应的 MetaObject 对象
+     */
     private MetaObject metaParameters;
 
     public ParameterMappingTokenHandler(Configuration configuration, Class<?> parameterType, Map<String, Object> additionalParameters) {
@@ -64,11 +85,19 @@ public class SqlSourceBuilder extends BaseBuilder {
 
     @Override
     public String handleToken(String content) {
+      // 构建 ParameterMapping 对象，并添加到 parameterMappings 中
       parameterMappings.add(buildParameterMapping(content));
+      // 返回 ? 占位符
       return "?";
     }
 
     private ParameterMapping buildParameterMapping(String content) {
+      /**
+       * 解析成 Map 集合
+       * 获取对应的属性
+       * 创建 ParameterMapping
+       * @see ParameterExpression#parse(String)
+       */
       Map<String, String> propertiesMap = parseParameterMapping(content);
       String property = propertiesMap.get("property");
       Class<?> propertyType;

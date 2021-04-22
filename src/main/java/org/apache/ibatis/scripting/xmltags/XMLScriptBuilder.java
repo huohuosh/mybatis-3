@@ -77,7 +77,11 @@ public class XMLScriptBuilder extends BaseBuilder {
   }
 
   public SqlSource parseScriptNode() {
-    // 解析 SQL
+    /**
+     * 解析 SQL
+     * 如果 sql 中有 ${} 或者 存在 {@link #nodeHandlerMap} 中的 handler
+     * 则说明 sql 是动态的，生成 DynamicSqlSource
+     */
     MixedSqlNode rootSqlNode = parseDynamicTags(context);
     SqlSource sqlSource = null;
     // 创建 SqlSource 对象

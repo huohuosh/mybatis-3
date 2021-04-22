@@ -23,11 +23,18 @@ import org.apache.ibatis.mapping.SqlSource;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 静态的 SqlSource 实现类
  * @author Clinton Begin
  */
 public class StaticSqlSource implements SqlSource {
 
+  /**
+   * 静态的 SQL
+   */
   private final String sql;
+  /**
+   * ParameterMapping 集合
+   */
   private final List<ParameterMapping> parameterMappings;
   private final Configuration configuration;
 
