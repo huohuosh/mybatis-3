@@ -34,10 +34,16 @@ import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.transaction.Transaction;
 
 /**
+ * 每次开始读或写操作，优先从缓存中获取对应的 Statement 对象如果不存在，才进行创建
+ * 执行完成后，不关闭该 Statement 对象
  * @author Clinton Begin
  */
 public class ReuseExecutor extends BaseExecutor {
 
+  /**
+   * Statement 的缓存
+   * KEY： SQL
+   */
   private final Map<String, Statement> statementMap = new HashMap<>();
 
   public ReuseExecutor(Configuration configuration, Transaction transaction) {
@@ -70,25 +76,39 @@ public class ReuseExecutor extends BaseExecutor {
 
   @Override
   public List<BatchResult> doFlushStatements(boolean isRollback) {
+    // 关闭缓存的 Statement 对象们
     for (Statement stmt : statementMap.values()) {
       closeStatement(stmt);
     }
     statementMap.clear();
+    // 返回空集合
     return Collections.emptyList();
   }
 
   private Statement prepareStatement(StatementHandler handler, Log statementLog) throws SQLException {
     Statement stmt;
     BoundSql boundSql = handler.getBoundSql();
+    // 获取 sql
     String sql = boundSql.getSql();
+    /**
+     * 判断 sql 对应的 Statement 是否存在且该连接没有关闭
+     * - 如果是，使用缓存中的 Statement，设置事务超时时间
+     * - 如果不是，获取连接， 创建 Statement，并放入缓存
+     */
     if (hasStatementFor(sql)) {
+      // 使用之前的 Statement
       stmt = getStatement(sql);
+      // 设置事务超时时间
       applyTransactionTimeout(stmt);
     } else {
+      // 获取连接
       Connection connection = getConnection(statementLog);
+      // 创建 Statement、PrepareStatement 或 CallableStatement 对象
       stmt = handler.prepare(connection, transaction.getTimeout());
+      // 放入缓存
       putStatement(sql, stmt);
     }
+    // 设置 SQL 上的参数，例如 PrepareStatement 对象上的占位符
     handler.parameterize(stmt);
     return stmt;
   }

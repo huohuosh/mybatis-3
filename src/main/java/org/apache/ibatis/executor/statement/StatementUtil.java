@@ -44,6 +44,9 @@ public class StatementUtil {
     if (transactionTimeout == null){
       return;
     }
+    // 如果 queryTimeout 为空或为 null
+    // 或者 transactionTimeout 小于 queryTimeout
+    // 设置 statement.setQueryTimeout 为 transactionTimeout
     Integer timeToLiveOfQuery = null;
     if (queryTimeout == null || queryTimeout == 0) {
       timeToLiveOfQuery = transactionTimeout;
