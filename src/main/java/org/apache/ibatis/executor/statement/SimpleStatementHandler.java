@@ -33,6 +33,7 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
 /**
+ * java.sql.Statement 的 StatementHandler 实现类
  * @author Clinton Begin
  */
 public class SimpleStatementHandler extends BaseStatementHandler {
@@ -47,16 +48,26 @@ public class SimpleStatementHandler extends BaseStatementHandler {
     Object parameterObject = boundSql.getParameterObject();
     KeyGenerator keyGenerator = mappedStatement.getKeyGenerator();
     int rows;
+    // 如果是 Jdbc3KeyGenerator 类型
     if (keyGenerator instanceof Jdbc3KeyGenerator) {
+      // 执行写操作
       statement.execute(sql, Statement.RETURN_GENERATED_KEYS);
+      // 获取更新行数
       rows = statement.getUpdateCount();
+      // 执行 keyGenerator 的后置处理逻辑
       keyGenerator.processAfter(executor, mappedStatement, statement, parameterObject);
+    // 如果是 SelectKeyGenerator 类型
     } else if (keyGenerator instanceof SelectKeyGenerator) {
+      // 执行写操作
       statement.execute(sql);
+      // 获取更新行数
       rows = statement.getUpdateCount();
+      // 执行 keyGenerator 的后置处理逻辑
       keyGenerator.processAfter(executor, mappedStatement, statement, parameterObject);
     } else {
+      // 执行写操作
       statement.execute(sql);
+      // 获取更新行数
       rows = statement.getUpdateCount();
     }
     return rows;
@@ -65,25 +76,31 @@ public class SimpleStatementHandler extends BaseStatementHandler {
   @Override
   public void batch(Statement statement) throws SQLException {
     String sql = boundSql.getSql();
+    // 添加到批处理
     statement.addBatch(sql);
   }
 
   @Override
   public <E> List<E> query(Statement statement, ResultHandler resultHandler) throws SQLException {
     String sql = boundSql.getSql();
+    // 执行查询
     statement.execute(sql);
+    // 处理返回结果
     return resultSetHandler.handleResultSets(statement);
   }
 
   @Override
   public <E> Cursor<E> queryCursor(Statement statement) throws SQLException {
     String sql = boundSql.getSql();
+    // 执行查询
     statement.execute(sql);
+    // 处理返回的 Cursor 结果
     return resultSetHandler.handleCursorResultSets(statement);
   }
 
   @Override
   protected Statement instantiateStatement(Connection connection) throws SQLException {
+    // 创建 java.sql.Statement 对象
     if (mappedStatement.getResultSetType() == ResultSetType.DEFAULT) {
       return connection.createStatement();
     } else {
