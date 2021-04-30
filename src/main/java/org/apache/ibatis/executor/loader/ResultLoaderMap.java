@@ -76,6 +76,7 @@ public class ResultLoaderMap {
   }
 
   public boolean load(String property) throws SQLException {
+    System.out.println("-------------------" + property);
     LoadPair pair = loaderMap.remove(property.toUpperCase(Locale.ENGLISH));
     if (pair != null) {
       pair.load();

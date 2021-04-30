@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.SelectKey;
 import org.apache.ibatis.cache.Cache;
 import org.apache.ibatis.executor.keygen.Jdbc3KeyGenerator;
 import org.apache.ibatis.executor.keygen.KeyGenerator;
@@ -92,10 +94,14 @@ public final class MappedStatement {
    */
   private boolean useCache;
   /**
-   * 是一个标志性的属性
-   * resultOrdered属性只存在于select元素中.
-   * 用户可以通过配置该属性的值为true来告知 mybatis 当前 select 语句的查询结果针对于<id>元素的配置是有序的
+   * 用户可以通过配置该属性的值为 true 来告知
+   * mybatis 当前 select 语句的查询结果针对于<id>元素的配置是有序的
    * 即,多个相同<id>属性是分组且连续的.
+   *
+   * 这个设置仅针对嵌套结果 select 语句：
+   * 如果为 true，将会假设包含了嵌套结果集或是分组
+   * 当返回一个主结果行时，就不会产生对前面结果集的引用
+   * 这就使得在获取嵌套结果集的时候不至于内存不够用。默认值：false
    */
   private boolean resultOrdered;
   /**
@@ -111,6 +117,8 @@ public final class MappedStatement {
    * MyBatis 会通过 getGeneratedKeys 的返回值或者通过 insert 语句的 selectKey 子元素设置它的键值
    * 默认：unset
    * 如果希望得到多个生成的列，也可以是逗号分隔的属性名称列表
+   * @see SelectKey#keyProperty()
+   * @see Options#keyProperty()
    */
   private String[] keyProperties;
   /**

@@ -181,7 +181,7 @@ public abstract class BaseExecutor implements Executor {
     try {
       // queryStack + 1
       queryStack++;
-      // 从一级缓存中，获取查询结果
+      // 如果 resultHandler 为空，从一级缓存中，获取查询结果
       list = resultHandler == null ? (List<E>) localCache.getObject(key) : null;
       // 获取到，则进行处理
       if (list != null) {

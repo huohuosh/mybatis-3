@@ -116,10 +116,11 @@ public class CachingExecutor implements Executor {
     if (cache != null) {
       // 判断是否需要清除缓存，如果是，清除缓存
       flushCacheIfRequired(ms);
-      // 该语句是否使用缓存并且
-      // 默认 isSelect
-      // @Options(useCache = true) 或 <select useCache="true">
-      // TODO resultHandler == null ?
+      /**
+       * 该语句是否使用缓存 （默认 isSelect）
+       * 例如 - @Options(useCache = true) 或 <select useCache="true">
+       * 并且 resultHandler 为空（说明没有自定义 resultHandler，自定义的不会走缓存）
+       */
       if (ms.isUseCache() && resultHandler == null) {
         ensureNoOutParams(ms, boundSql);
         // 获取缓存数据

@@ -28,17 +28,19 @@ import java.io.Closeable;
 public interface Cursor<T> extends Closeable, Iterable<T> {
 
     /**
+     * 是否处于打开状态
      * @return true if the cursor has started to fetch items from database.
      */
     boolean isOpen();
 
     /**
-     *
+     * 是否全部消费完成
      * @return true if the cursor is fully consumed and has returned all elements matching the query.
      */
     boolean isConsumed();
 
     /**
+     * 获得当前索引
      * Get the current item index. The first item has the index 0.
      * @return -1 if the first cursor item has not been retrieved. The index of the current item retrieved.
      */

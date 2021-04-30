@@ -101,16 +101,41 @@ public class Configuration {
 
   protected Environment environment;
 
+  /**
+   * 是否允许在嵌套语句中使用分页（RowBounds）。如果允许使用则设置为 false
+   * 默认 false
+   */
   protected boolean safeRowBoundsEnabled;
+  /**
+   * 是否允许在嵌套语句中使用结果处理器（ResultHandler）。如果允许使用则设置为 false
+   * 默认 true
+   */
   protected boolean safeResultHandlerEnabled = true;
+  /**
+   * 是否开启驼峰命名自动映射
+   * 即从经典数据库列名 FIRST_NAME 映射到经典 Java 属性名 firstName
+   * 默认 false
+   */
   protected boolean mapUnderscoreToCamelCase;
   protected boolean aggressiveLazyLoading;
   protected boolean multipleResultSetsEnabled = true;
   protected boolean useGeneratedKeys;
   protected boolean useColumnLabel = true;
   protected boolean cacheEnabled = true;
+  /**
+   * 指定当结果集中值为 null 的时候是否调用映射对象的 setter（map 对象时为 put）方法
+   * 这在依赖于 Map.keySet() 或 null 值进行初始化时比较有用。
+   * 注意基本类型（int、boolean 等）是不能设置成 null 的
+   * 默认为 false
+   */
   protected boolean callSettersOnNulls;
   protected boolean useActualParamName = true;
+  /**
+   * 当返回行的所有列都是空时，MyBatis默认返回 null
+   * 当开启这个设置时，MyBatis会返回一个空实例
+   * 请注意，它也适用于嵌套的结果集（如集合或关联）
+   * 默认 false
+   */
   protected boolean returnInstanceForEmptyRow;
 
   protected String logPrefix;
@@ -126,6 +151,13 @@ public class Configuration {
    */
   protected ExecutorType defaultExecutorType = ExecutorType.SIMPLE;
   protected AutoMappingBehavior autoMappingBehavior = AutoMappingBehavior.PARTIAL;
+  /**
+   * 指定发现自动映射目标未知列（或未知属性类型）的行为
+   * NONE: 不做任何反应
+   * WARNING: 输出警告日志
+   * FAILING: 映射失败 (抛出 SqlSessionException)
+   * 默认 NONE
+   */
   protected AutoMappingUnknownColumnBehavior autoMappingUnknownColumnBehavior = AutoMappingUnknownColumnBehavior.NONE;
 
   protected Properties variables = new Properties();

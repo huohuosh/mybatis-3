@@ -16,10 +16,15 @@
 package org.apache.ibatis.session;
 
 /**
+ * 结果处理器接口
  * @author Clinton Begin
  */
 public interface ResultHandler<T> {
 
+  /**
+   * 处理当前结果
+   * @param resultContext
+   */
   void handleResult(ResultContext<? extends T> resultContext);
 
 }
