@@ -117,6 +117,10 @@ public class Configuration {
    * 默认 false
    */
   protected boolean mapUnderscoreToCamelCase;
+  /**
+   * 开启时，任一方法的调用都会加载该对象的所有延迟加载属性。
+   * 否则，每个延迟加载属性会按需加载
+   */
   protected boolean aggressiveLazyLoading;
   protected boolean multipleResultSetsEnabled = true;
   protected boolean useGeneratedKeys;
@@ -143,6 +147,10 @@ public class Configuration {
   protected Class <? extends VFS> vfsImpl;
   protected LocalCacheScope localCacheScope = LocalCacheScope.SESSION;
   protected JdbcType jdbcTypeForNull = JdbcType.OTHER;
+  /**
+   * 指定对象的哪些方法触发一次延迟加载
+   * 用逗号分隔的方法列表
+   */
   protected Set<String> lazyLoadTriggerMethods = new HashSet<>(Arrays.asList("equals", "clone", "hashCode", "toString"));
   protected Integer defaultStatementTimeout;
   protected Integer defaultFetchSize;

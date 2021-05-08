@@ -1049,6 +1049,21 @@ public class DefaultResultSetHandler implements ResultSetHandler {
   // GET VALUE FROM ROW FOR NESTED RESULT MAP
   //
 
+  /**
+   * - 外层对象不存在
+   *   创建外层对象，处理自动映射和需要设置的属性
+   *   处理嵌套映射，将生成的结果对象设置到外层对象的相应的属性中
+   *   将外层对象添加到 nestedResultObjects
+   * - 外层对象存在
+   *   处理嵌套映射，将生成的结果对象设置到外层对象的相应的属性中
+   * @param rsw
+   * @param resultMap
+   * @param combinedKey
+   * @param columnPrefix
+   * @param partialObject
+   * @return
+   * @throws SQLException
+   */
   private Object getRowValue(ResultSetWrapper rsw, ResultMap resultMap, CacheKey combinedKey, String columnPrefix, Object partialObject) throws SQLException {
     final String resultMapId = resultMap.getId();
     Object rowValue = partialObject;

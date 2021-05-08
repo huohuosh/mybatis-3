@@ -40,6 +40,7 @@ import org.apache.ibatis.reflection.property.PropertyNamer;
 import org.apache.ibatis.session.Configuration;
 
 /**
+ * 基于 Javassist 的 ProxyFactory 实现类
  * @author Eduardo Macarron
  */
 public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.ProxyFactory {
@@ -49,6 +50,7 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
 
   public JavassistProxyFactory() {
     try {
+      // 加载 javassist.util.proxy.ProxyFactory 类
       Resources.classForName("javassist.util.proxy.ProxyFactory");
     } catch (Throwable e) {
       throw new IllegalStateException("Cannot enable lazy loading because Javassist is not available. Add Javassist to your classpath.", e);
@@ -60,6 +62,15 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
     return EnhancedResultObjectProxyImpl.createProxy(target, lazyLoader, configuration, objectFactory, constructorArgTypes, constructorArgs);
   }
 
+  /**
+   * 创建支持反序列化的代理对象
+   * @param target
+   * @param unloadedProperties
+   * @param objectFactory
+   * @param constructorArgTypes
+   * @param constructorArgs
+   * @return
+   */
   public Object createDeserializationProxy(Object target, Map<String, ResultLoaderMap.LoadPair> unloadedProperties, ObjectFactory objectFactory, List<Class<?>> constructorArgTypes, List<Object> constructorArgs) {
     return EnhancedDeserializationProxyImpl.createProxy(target, unloadedProperties, objectFactory, constructorArgTypes, constructorArgs);
   }
@@ -70,10 +81,12 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
   }
 
   static Object crateProxy(Class<?> type, MethodHandler callback, List<Class<?>> constructorArgTypes, List<Object> constructorArgs) {
-
+    // 创建 javassist ProxyFactory 对象
     ProxyFactory enhancer = new ProxyFactory();
+    // 设置父类
     enhancer.setSuperclass(type);
 
+    // 如果没有 writeReplace 方法，设置接口为 WriteReplaceInterface
     try {
       type.getDeclaredMethod(WRITE_REPLACE_METHOD);
       // ObjectOutputStream will call writeReplace of objects returned by writeReplace
@@ -87,6 +100,7 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
     }
 
     Object enhanced;
+    // 创建代理对象
     Class<?>[] typesArray = constructorArgTypes.toArray(new Class[constructorArgTypes.size()]);
     Object[] valuesArray = constructorArgs.toArray(new Object[constructorArgs.size()]);
     try {
@@ -94,6 +108,7 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
     } catch (Exception e) {
       throw new ExecutorException("Error creating lazy proxy.  Cause: " + e, e);
     }
+    // 设置代理对象的执行器
     ((Proxy) enhanced).setHandler(callback);
     return enhanced;
   }
@@ -102,7 +117,15 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
 
     private final Class<?> type;
     private final ResultLoaderMap lazyLoader;
+    /**
+     * 是否一次加载所有延迟加载属性
+     * @see Configuration#aggressiveLazyLoading
+     */
     private final boolean aggressive;
+    /**
+     * 指定对象的哪些方法触发一次延迟加载所有属性
+     * @see Configuration#lazyLoadTriggerMethods
+     */
     private final Set<String> lazyLoadTriggerMethods;
     private final ObjectFactory objectFactory;
     private final List<Class<?>> constructorArgTypes;
@@ -120,8 +143,11 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
 
     public static Object createProxy(Object target, ResultLoaderMap lazyLoader, Configuration configuration, ObjectFactory objectFactory, List<Class<?>> constructorArgTypes, List<Object> constructorArgs) {
       final Class<?> type = target.getClass();
+      // 创建 EnhancedResultObjectProxyImpl 对象
       EnhancedResultObjectProxyImpl callback = new EnhancedResultObjectProxyImpl(type, lazyLoader, configuration, objectFactory, constructorArgTypes, constructorArgs);
+      // 创建代理对象
       Object enhanced = crateProxy(type, callback, constructorArgTypes, constructorArgs);
+      // 赋值属性
       PropertyCopier.copyBeanProperties(type, target, enhanced);
       return enhanced;
     }
@@ -147,10 +173,13 @@ public class JavassistProxyFactory implements org.apache.ibatis.executor.loader.
           } else {
             if (lazyLoader.size() > 0 && !FINALIZE_METHOD.equals(methodName)) {
               if (aggressive || lazyLoadTriggerMethods.contains(methodName)) {
+                // 加载所有延迟加载的属性
                 lazyLoader.loadAll();
+              // 如果调用了 setter 方法，则不再使用延迟加载
               } else if (PropertyNamer.isSetter(methodName)) {
                 final String property = PropertyNamer.methodToProperty(methodName);
                 lazyLoader.remove(property);
+              // 如果调用了 getter 方法，则执行延迟加载
               } else if (PropertyNamer.isGetter(methodName)) {
                 final String property = PropertyNamer.methodToProperty(methodName);
                 if (lazyLoader.hasLoader(property)) {

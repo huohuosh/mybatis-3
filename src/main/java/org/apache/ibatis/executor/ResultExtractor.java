@@ -23,6 +23,7 @@ import java.lang.reflect.Array;
 import java.util.List;
 
 /**
+ * 结果提取器
  * @author Andrew Gustafson
  */
 public class ResultExtractor {
@@ -36,12 +37,15 @@ public class ResultExtractor {
 
   public Object extractObjectFromList(List<Object> list, Class<?> targetType) {
     Object value = null;
+    // targetType 是 List 类型，直接返回
     if (targetType != null && targetType.isAssignableFrom(list.getClass())) {
       value = list;
+    // targetType 是集合，创建该类型，把 list 加入集合
     } else if (targetType != null && objectFactory.isCollection(targetType)) {
       value = objectFactory.create(targetType);
       MetaObject metaObject = configuration.newMetaObject(value);
       metaObject.addAll(list);
+    // targetType 是数组，创建数组，将 list 放入数组
     } else if (targetType != null && targetType.isArray()) {
       Class<?> arrayComponentType = targetType.getComponentType();
       Object array = Array.newInstance(arrayComponentType, list.size());
@@ -53,6 +57,7 @@ public class ResultExtractor {
       } else {
         value = list.toArray((Object[])array);
       }
+    // 普通对象，集合大于 1，抛出异常，否则取第一条记录
     } else {
       if (list != null && list.size() > 1) {
         throw new ExecutorException("Statement returned more than one row, where no more than one was expected.");

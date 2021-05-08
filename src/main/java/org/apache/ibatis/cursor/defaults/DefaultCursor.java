@@ -167,15 +167,19 @@ public class DefaultCursor<T> implements Cursor<T> {
       throw new RuntimeException(e);
     }
 
+    // 赋值给 next
     T next = objectWrapperResultHandler.result;
+    // 增加 indexWithRowBound
     if (next != null) {
       indexWithRowBound++;
     }
     // No more object or limit reached
+    // 没有更多记录，或者到达 rowBounds 的限制索引位置，则关闭游标，并设置状态为 CursorStatus.CONSUMED
     if (next == null || getReadItemsCount() == rowBounds.getOffset() + rowBounds.getLimit()) {
       close();
       status = CursorStatus.CONSUMED;
     }
+    // 置空 objectWrapperResultHandler.result 属性
     objectWrapperResultHandler.result = null;
 
     return next;
