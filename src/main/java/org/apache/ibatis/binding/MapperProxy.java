@@ -62,6 +62,7 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
         return method.invoke(this, args);
       // 支持 JDK8 default 方法
       } else if (isDefaultMethod(method)) {
+        // TODO JDK8 default 方法
         return invokeDefaultMethod(proxy, method, args);
       }
     } catch (Throwable t) {

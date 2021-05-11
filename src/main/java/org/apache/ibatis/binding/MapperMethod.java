@@ -153,8 +153,10 @@ public class MapperMethod {
     }
     // issue #510 Collections & arrays support
     if (!method.getReturnType().isAssignableFrom(result.getClass())) {
+      // array
       if (method.getReturnType().isArray()) {
         return convertToArray(result);
+      // collection
       } else {
         return convertToDeclaredCollection(sqlSession.getConfiguration(), result);
       }
